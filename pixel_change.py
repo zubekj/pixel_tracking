@@ -4,17 +4,14 @@ import cv2
 
 
 def dist(cframe, oframe):
-    d = 0
-    for i in range(cframe.shape[0]):
-        for j in range(cframe.shape[1]):
-            d += (sum(cframe[i, j] - oframe[i, j]) == 0)
-    return d
+    return ((cframe.astype(np.int8) - oframe.astype(np.int8)) != 0).sum() / 3
 
 
 def calculate_pixel_change(cap, maskA, maskB):
 
     ret, frame = cap.read()
-    oframe = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    #oframe = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    oframe = frame
 
     distances = []
 
@@ -24,7 +21,8 @@ def calculate_pixel_change(cap, maskA, maskB):
         if not ret:
             break
 
-        cframe = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        #cframe = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        cframe = frame
         distances.append(dist(cframe, oframe))
         oframe = cframe
 
@@ -54,14 +52,15 @@ def draw_mask(event,x,y,flags,param):
 
 if __name__ == "__main__":
 
-    cap = cv2.VideoCapture('vtest.avi')
+    cap = cv2.VideoCapture('flame.avi')
 
     if not cap.isOpened():
         print("Cannot open video file")
         exit(1)
 
     ret, frame = cap.read()
-    img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    #img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    img = frame
 
     cv2.namedWindow('image')
     cv2.setMouseCallback('image', draw_mask)
@@ -73,8 +72,6 @@ if __name__ == "__main__":
             break
 
     cv2.destroyAllWindows()
-
-
 
     distances = calculate_pixel_change(cap, None, None)
     distances.to_csv("out.txt", index=False)
