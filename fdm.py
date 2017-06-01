@@ -7,7 +7,19 @@ ds = 6  # downsample
 cuttoff_freq = 0.75  # for butterworth filtering
 
 
-def calculate_pixel_change(cap, masks):
+def butterworth_filter(data):
+    # source http://azitech.wordpress.com/2011/03/15/designing-a-butterworth-low-pass-filter-with-scipy/
+    norm_pass = cuttoff_freq/(ds/2)
+    norm_stop = 1.5*norm_pass
+    (N, Wn) = scipy.signal.buttord(wp=norm_pass, ws=norm_stop, gpass=2,
+                                   gstop=30, analog=0)
+    (b, a) = scipy.signal.butter(N, Wn, btype='low', analog=0, output='ba')
+    data = [scipy.signal.lfilter(b, a, d) for d in data]
+    data = pd.DataFrame(data).T
+    return data
+
+
+def calculate_frame_diffs(cap, masks):
     ret, frame = cap.read()
     oframe = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -24,17 +36,7 @@ def calculate_pixel_change(cap, masks):
                           for m in masks])
         oframe = cframe
 
-    # source http://azitech.wordpress.com/2011/03/15/designing-a-butterworth-low-pass-filter-with-scipy/
-    distances = np.array(distances)
-    norm_pass = cuttoff_freq/(ds/2)
-    norm_stop = 1.5*norm_pass
-    (N, Wn) = scipy.signal.buttord(wp=norm_pass, ws=norm_stop, gpass=2,
-                                   gstop=30, analog=0)
-    (b, a) = scipy.signal.butter(N, Wn, btype='low', analog=0, output='ba')
-    distances = [scipy.signal.lfilter(b, a, distances[:, i])
-                 for i in range(distances.shape[1])]
-    distances = pd.DataFrame(distances).T
-    return distances
+    return pd.DataFrame(distances)
 
 
 drawing = False  # true if mouse is pressed
@@ -60,10 +62,6 @@ def mouse_event(event, x, y, flags, param):
 
 
 def draw_mask(cap):
-    if not cap.isOpened():
-        print("Cannot open video file")
-        exit(1)
-
     ret, frame = cap.read()
     img = frame
 
@@ -83,6 +81,12 @@ if __name__ == "__main__":
 
     cap = cv2.VideoCapture('cut.avi')
     #cap = cv2.VideoCapture('flame.avi')
+
+    if not cap.isOpened():
+        print("Cannot open video file")
+        exit(1)
+
+
     ret, frame = cap.read()
 
     maskA = np.zeros(frame.shape[:2], dtype=np.int8)
@@ -91,6 +95,8 @@ if __name__ == "__main__":
     maskA[:, list(range(int(maskA.shape[1]/2)))] = 1
     maskB[:, list(range(int(maskA.shape[1]/2), maskA.shape[1]))] = 1
 
-    distances = calculate_pixel_change(cap, [maskA, maskB])
-    distances.to_csv("out.txt", index=False)
+    distances = calculate_frame_diffs(cap, [maskA, maskB])
+    distances.to_csv("raw_out.csv", index=False)
+    distances = butterworth_filter(distances)
+    distances.to_csv("out.csv", index=False)
     cap.release()
