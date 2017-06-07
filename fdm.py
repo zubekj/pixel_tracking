@@ -14,14 +14,21 @@ def butterworth_filter(data):
     (N, Wn) = scipy.signal.buttord(wp=norm_pass, ws=norm_stop, gpass=2,
                                    gstop=30, analog=0)
     (b, a) = scipy.signal.butter(N, Wn, btype='low', analog=0, output='ba')
-    data = [scipy.signal.lfilter(b, a, d) for d in data]
+    data = [scipy.signal.lfilter(b, a, data[d].values) for d in data]
     data = pd.DataFrame(data).T
     return data
 
 
-def calculate_frame_diffs(cap, masks):
+def calculate_frame_diffs(cap, masks, pixel_diff_threshold=20,
+                          video_output=None):
     ret, frame = cap.read()
     oframe = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    video_writer = cv2.VideoWriter()
+    if video_output is not None:
+        video_writer.open(video_output,
+                          cv2.VideoWriter_fourcc(*'XVID'),
+                          20.0, oframe.T.shape, False)
 
     distances = []
 
@@ -31,10 +38,19 @@ def calculate_frame_diffs(cap, masks):
             break
 
         cframe = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        distances.append([(np.abs(cframe.astype(np.int8) -
-                                  oframe.astype(np.int8)) & m).mean()
-                          for m in masks])
+
+        frame_diff = np.abs(cframe.astype(np.int8) -
+                            oframe.astype(np.int8))
+        frame_diff[frame_diff <= pixel_diff_threshold] = 0
+
+        if video_output is not None:
+            video_writer.write(frame_diff.astype(np.uint8))
+
+        distances.append([(frame_diff & m).mean() for m in masks])
         oframe = cframe
+
+    if video_output is not None:
+        video_writer.release()
 
     return pd.DataFrame(distances)
 
@@ -86,7 +102,6 @@ if __name__ == "__main__":
         print("Cannot open video file")
         exit(1)
 
-
     ret, frame = cap.read()
 
     maskA = np.zeros(frame.shape[:2], dtype=np.int8)
@@ -95,8 +110,7 @@ if __name__ == "__main__":
     maskA[:, list(range(int(maskA.shape[1]/2)))] = 1
     maskB[:, list(range(int(maskA.shape[1]/2), maskA.shape[1]))] = 1
 
-    distances = calculate_frame_diffs(cap, [maskA, maskB])
+    distances = calculate_frame_diffs(cap, [maskA, maskB],
+                                      video_output="fd_out.avi")
     distances.to_csv("raw_out.csv", index=False)
-    distances = butterworth_filter(distances)
-    distances.to_csv("out.csv", index=False)
     cap.release()
