@@ -55,44 +55,6 @@ def calculate_frame_diffs(cap, masks, pixel_diff_threshold=20,
     return pd.DataFrame(distances)
 
 
-drawing = False  # true if mouse is pressed
-ix, iy = -1, -1
-img = None
-
-
-# mouse callback function
-def mouse_event(event, x, y, flags, param):
-    global ix, iy, drawing, mode
-
-    if event == cv2.EVENT_LBUTTONDOWN:
-        drawing = True
-        ix, iy = x, y
-
-    elif event == cv2.EVENT_MOUSEMOVE:
-        if drawing:
-            cv2.circle(img, (x, y), 5, (0, 0, 255), -1)
-
-    elif event == cv2.EVENT_LBUTTONUP:
-        drawing = False
-        cv2.circle(img, (x, y), 5, (0, 0, 255), -1)
-
-
-def draw_mask(cap):
-    ret, frame = cap.read()
-    img = frame
-
-    cv2.namedWindow('image')
-    cv2.setMouseCallback('image', mouse_event)
-
-    while(True):
-        cv2.imshow('image', img)
-        k = cv2.waitKey(1) & 0xFF
-        if k == 27:
-            break
-
-    cv2.destroyAllWindows()
-
-
 if __name__ == "__main__":
 
     cap = cv2.VideoCapture('cut.avi')
