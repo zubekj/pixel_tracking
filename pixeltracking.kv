@@ -1,62 +1,127 @@
 <-VideoWidget>:
-  vid_size: (0, 0)
-  vid_pos: (0, 0)
-  fbo_texture: None
+    vid_size: (0, 0)
+    vid_pos: (0, 0)
+    fbo_texture: None
 
-  canvas:
-    Color:
-      rgb: (1, 1, 1)
-    Rectangle:
-      texture: self.texture
-      size: self.vid_size
-      pos:  self.vid_pos
-    Color:
-      rgba: (1, 1, 1, 0.5)
-    Rectangle:
-      texture: self.fbo_texture
-      size: self.vid_size
-      pos:  self.vid_pos
+    canvas:
+        Color:
+            rgb: (1, 1, 1)
+        Rectangle:
+            texture: self.texture
+            size: self.vid_size
+            pos: self.vid_pos
+        Color:
+            rgba: (1, 1, 1, 0.5)
+        Rectangle:
+            texture: self.fbo_texture
+            size: self.vid_size
+            pos: self.vid_pos
 
 
 <ROISelector>:
-  pos_hint_y: 0
-  orientation: "horizontal"
-  size_hint_y: None
-  height: 50
-  Label:
-    text: "Region of interest:"
-  Button:
-    id: mainbutton_id
-    text: "Select ROI…"
-    on_release: root.dropdown.open(args[0])
-  Button:
-    id: removebutton_id
-    text: "Remove current ROI"
-    on_release: root.roi_list.remove(root.roi_list.selected)
-  Button:
-    text: "Export ROIs"
-    on_release: app.export_rois()
-
-BoxLayout:
-  orientation: "vertical"
-  VideoWidget:
-    size_hint_y: 1
-    size_hint_x: 1
-    id: video_id
-  BoxLayout:
     pos_hint_y: 0
     orientation: "horizontal"
     size_hint_y: None
     height: 50
+    Label:
+        text: "Region of interest:"
     Button:
-      text: "Load video"
-      size_hint_x: None
-      on_release: video_id.load_video()
-    Slider:
-      id: slider_id
-      min: 0
-      max: 1
-      value: 0
-      on_value: video_id.seek_video(args[1])
-  ROISelector:
-    id: roi_selector_id
+        id: mainbutton_id
+        text: "Select ROI…"
+        on_release: root.dropdown.open(args[0])
+    Button:
+        id: removebutton_id
+        text: "Remove current ROI"
+        on_release: root.roi_list.remove(root.roi_list.selected)
+    Button:
+        text: "Export frame differences"
+        on_release: app.export_rois()
+
+BoxLayout:
+    orientation: "vertical"
+    VideoWidget:
+        size_hint_y: 1
+        size_hint_x: 1
+        id: video_id
+    BoxLayout:
+        pos_hint_y: 0
+        orientation: "horizontal"
+        size_hint_y: None
+        height: 50
+        Button:
+            text: "Load video"
+            size_hint_x: None
+            on_release: video_id.load_video_init()
+        Slider:
+            id: slider_id
+            min: 0
+            max: 1
+            value: 0
+            disabled: True
+            on_value: video_id.seek_video(args[1])
+    ROISelector:
+        id: roi_selector_id
+
+
+<LoadDialog>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        FileChooserListView:
+            id: filechooser
+
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+
+            Button:
+                text: "Load"
+                on_release: root.load(filechooser.path, filechooser.selection)
+
+
+<VideoProgress>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        Image:
+            id: image_id
+            allow_stretch: True
+            keep_ratio: True
+        ProgressBar:
+            id: progressbar_id
+            max: 1
+            size_hint_y: None
+            height: 50
+
+
+<SaveDialog>:
+    text_input: text_input
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        FileChooserListView:
+            id: filechooser
+            on_selection: text_input.text = self.selection and self.selection[0] or ''
+
+        TextInput:
+            id: text_input
+            size_hint_y: None
+            height: 30
+            multiline: False
+
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+
+            Button:
+                text: "Save"
+                on_release: root.save(filechooser.path, text_input.text)
