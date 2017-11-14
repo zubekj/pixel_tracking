@@ -1,5 +1,22 @@
 import numpy as np
 from skvideo.io import FFmpegReader
+import scipy.signal
+import pandas as pd
+
+ds = 6  # downsample
+cuttoff_freq = 0.75  # for butterworth filtering
+
+
+def butterworth_filter(data):
+    # source http://azitech.wordpress.com/2011/03/15/designing-a-butterworth-low-pass-filter-with-scipy/
+    norm_pass = cuttoff_freq/(ds/2)
+    norm_stop = 1.5*norm_pass
+    (N, Wn) = scipy.signal.buttord(wp=norm_pass, ws=norm_stop, gpass=2,
+                                   gstop=30, analog=0)
+    (b, a) = scipy.signal.butter(N, Wn, btype='low', analog=0, output='ba')
+    data = [scipy.signal.lfilter(b, a, data[d].values) for d in data]
+    data = pd.DataFrame(data).T
+    return data
 
 
 def calculate_frame_diffs(video_file, masks, pixel_diff_threshold=10):
