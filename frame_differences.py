@@ -1,7 +1,9 @@
 import numpy as np
-from skvideo.io import FFmpegReader
-import scipy.signal
 import pandas as pd
+import scipy.signal
+
+import ffpyplayer
+from skvideo.io import FFmpegReader
 
 ds = 6  # downsample
 cuttoff_freq = 0.75  # for butterworth filtering
