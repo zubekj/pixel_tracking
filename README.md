@@ -12,7 +12,7 @@ Pixel Tracking app for quantifying movement on video recordings. Written in Pyth
 
 All required libraries may be installed with pip.
 
-    > pip install numpy pandas scipy kivy skvideo
+    > pip install numpy pandas scipy kivy scikit-video
 
 ## Running
 
