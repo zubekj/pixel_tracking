@@ -64,24 +64,20 @@ BoxLayout:
 
 
 <LoadDialog>:
-    BoxLayout:
+    FileBrowser:
+        id: filechooser
         size: root.size
         pos: root.pos
-        orientation: "vertical"
-        FileChooserListView:
-            id: filechooser
+        on_success: root.load(filechooser.path, filechooser.selection)
+        on_canceled: root.cancel()
 
-        BoxLayout:
-            size_hint_y: None
-            height: 30
-            Button:
-                text: "Cancel"
-                on_release: root.cancel()
-
-            Button:
-                text: "Load"
-                on_release: root.load(filechooser.path, filechooser.selection)
-
+<SaveDialog>:
+    FileBrowser:
+        id: filechooser
+        size: root.size
+        pos: root.pos
+        on_success: root.save(filechooser.path, filechooser.filename)
+        on_canceled: root.cancel()
 
 <VideoProgress>:
     BoxLayout:
@@ -97,31 +93,3 @@ BoxLayout:
             max: 1
             size_hint_y: None
             height: 50
-
-
-<SaveDialog>:
-    text_input: text_input
-    BoxLayout:
-        size: root.size
-        pos: root.pos
-        orientation: "vertical"
-        FileChooserListView:
-            id: filechooser
-            on_selection: text_input.text = self.selection and self.selection[0] or ''
-
-        TextInput:
-            id: text_input
-            size_hint_y: None
-            height: 30
-            multiline: False
-
-        BoxLayout:
-            size_hint_y: None
-            height: 30
-            Button:
-                text: "Cancel"
-                on_release: root.cancel()
-
-            Button:
-                text: "Save"
-                on_release: root.save(filechooser.path, text_input.text)

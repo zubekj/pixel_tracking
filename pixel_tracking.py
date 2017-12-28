@@ -9,7 +9,12 @@ from kivy.graphics import Color, Ellipse, Line, Fbo
 from kivy.graphics.texture import Texture
 from kivy.properties import ObjectProperty, BooleanProperty
 from kivy.event import EventDispatcher
-from kivy.clock import mainthread
+from kivy.clock import mainthread, Clock
+
+from kivy.config import Config
+Config.set('input', 'mouse', 'mouse,disable_multitouch')
+
+from kivy.garden.filebrowser import FileBrowser
 
 import threading
 import numpy as np
@@ -26,7 +31,6 @@ class LoadDialog(FloatLayout):
 
 class SaveDialog(FloatLayout):
     save = ObjectProperty(None)
-    text_input = ObjectProperty(None)
     cancel = ObjectProperty(None)
 
 
@@ -144,17 +148,20 @@ class VideoWidget(Video):
 
         with fbo:
             Color(*color, mode='rgb')
-            Ellipse(pos=(x-d/2, y-d/2), size=(d, d))
+            Ellipse(pos=(x - d / 2, y - d / 2), size=(d, d))
             touch.ud['line'] = Line(points=(x, y), width=d/2, joint='round')
 
+        Clock.schedule_once(lambda _: self.canvas.ask_update(), 0)
+
     def on_touch_move(self, touch):
-        if self.roi_list.selected is None or not "line" in touch.ud:
+        if self.roi_list.selected is None or "line" not in touch.ud:
             return
 
         fbo = self.fbo_list[self.roi_list.selected]
         x = (touch.x - self.vid_pos[0])/self.vid_size[0]*fbo.size[0]
         y = (touch.y - self.vid_pos[1])/self.vid_size[1]*fbo.size[1]
         touch.ud['line'].points += [x, y]
+        Clock.schedule_once(lambda _: self.canvas.ask_update(), 0)
 
     def on_texture(self, obj, texture):
         if self.state == "play":
