@@ -10,13 +10,6 @@
             texture: self.texture
             size: self.vid_size
             pos: self.vid_pos
-        Color:
-            rgba: (1, 1, 1, 0.5)
-        Rectangle:
-            texture: self.fbo_texture
-            size: self.vid_size
-            pos: self.vid_pos
-
 
 <ROISelector>:
     pos_hint_y: 0
@@ -68,7 +61,7 @@ BoxLayout:
         id: filechooser
         size: root.size
         pos: root.pos
-        on_success: root.load(filechooser.path, filechooser.selection)
+        on_success: root.load(filechooser.path, filechooser.filename)
         on_canceled: root.cancel()
 
 <SaveDialog>:
@@ -78,6 +71,24 @@ BoxLayout:
         pos: root.pos
         on_success: root.save(filechooser.path, filechooser.filename)
         on_canceled: root.cancel()
+
+<ConfirmPopup>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        Label:
+            text: root.text
+        GridLayout:
+            cols: 2
+            size_hint_y: 0
+            height: 50
+            Button:
+                text: "Yes"
+                on_release: root.yes()
+            Button:
+                text: "No"
+                on_release: root.no()
 
 <VideoProgress>:
     BoxLayout:
