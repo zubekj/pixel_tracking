@@ -31,32 +31,24 @@ roi_colors = [[ 0.10588235,  0.61960784,  0.46666667, 1],
               [ 0.4       ,  0.65098039,  0.11764706, 1],
               [ 0.90196078,  0.67058824,  0.00784314, 1]]
 
-class LoadDialog(FloatLayout):
+class LoadDialog(Popup):
     load = ObjectProperty(None)
-    cancel = ObjectProperty(None)
 
 
-class SaveDialog(FloatLayout):
+class SaveDialog(Popup):
     save = ObjectProperty(None)
-    cancel = ObjectProperty(None)
 
 
-class ConfirmPopup(FloatLayout):
+class ConfirmDialog(Popup):
     yes = ObjectProperty(None)
-    no = ObjectProperty(None)
-    text = StringProperty()
+    text = StringProperty("")
 
 
-class VideoProgress(FloatLayout):
+class VideoProgress(Popup):
 
     def __init__(self, **kwargs):
         super(VideoProgress, self).__init__(**kwargs)
-        self.job_finished = False
         self.ids.image_id.color = (1, 1, 1, 0)
-
-    def on_parent_dismiss(self, instance):
-        if not self.job_finished:
-            return True
 
     @mainthread
     def update_progress(self, progress_fraction, image_matrix):
@@ -65,7 +57,7 @@ class VideoProgress(FloatLayout):
         m[image_matrix == 1] = 255
         texture = Texture.create(size=(m.shape[1], m.shape[0]))
         texture.blit_buffer(m.tostring(), colorfmt="luminance",
-                bufferfmt="ubyte")
+                            bufferfmt="ubyte")
         self.ids.image_id.texture = texture
         self.ids.image_id.texture.flip_vertical()
         self.ids.image_id.color = (1, 1, 1, 1)
@@ -73,8 +65,6 @@ class VideoProgress(FloatLayout):
 
 
 class ROIList(EventDispatcher):
-
-    disabled = BooleanProperty(True)
 
     def __init__(self, **kwargs):
         self.register_event_type('on_roi_added')
@@ -86,29 +76,25 @@ class ROIList(EventDispatcher):
         self.selected = None
 
     def add(self):
-        if self.disabled:
-            return
         roi_name = "ROI {0}".format(len(self.values))
         self.values.append(roi_name)
         new_index = len(self.values)-1
         self.dispatch('on_roi_added', new_index)
 
     def select(self, index):
-        if self.disabled or index is None:
+        if index is None:
             return
         self.selected = index
         self.dispatch('on_roi_selected', index)
 
     def remove(self, index):
-        if self.disabled or index is None:
+        if index is None:
             return
         del self.values[index]
         self.selected = None
         self.dispatch('on_roi_removed', index)
 
     def clear(self):
-        if self.disabled:
-            return
         while len(self.values) > 0:
             self.remove(0)
 
@@ -120,7 +106,6 @@ class ROIList(EventDispatcher):
 
     def on_roi_removed(self, a):
         pass
-
 
 
 class VideoWidget(Video):
@@ -157,7 +142,8 @@ class VideoWidget(Video):
         del self.fbo_list[index]
 
     def on_touch_down(self, touch):
-        if not self.collide_point(*touch.pos) or self.roi_list.selected is None:
+        if not self.collide_point(*touch.pos)\
+           or self.roi_list.selected is None:
             return
 
         color = (1, 1, 1)
@@ -172,8 +158,6 @@ class VideoWidget(Video):
             Ellipse(pos=(x - d / 2, y - d / 2), size=(d, d))
             touch.ud['line'] = Line(points=(x, y), width=d/2, joint='round')
 
-        Clock.schedule_once(lambda _: self.canvas.ask_update(), 0)
-
     def on_touch_move(self, touch):
         if self.roi_list.selected is None or "line" not in touch.ud:
             return
@@ -182,15 +166,12 @@ class VideoWidget(Video):
         x = (touch.x - self.vid_pos[0])/self.vid_size[0]*fbo.size[0]
         y = (touch.y - self.vid_pos[1])/self.vid_size[1]*fbo.size[1]
         touch.ud['line'].points += [x, y]
-        Clock.schedule_once(lambda _: self.canvas.ask_update(), 0)
 
     def on_texture(self, obj, texture):
         if self.state == "play":
             self.state = "stop"
             self.resize_video()
-            self.roi_list.disabled = False
-            self.parent.ids.slider_id.disabled = False
-            self.fbo_texture = Texture.create()
+            self.parent.video_loaded = True
 
     def on_size(self, obj, size):
         self.resize_video()
@@ -205,63 +186,52 @@ class VideoWidget(Video):
                 (self.width - self.vid_size[0])/2 - self.width + self.right,
                 (self.height - self.vid_size[1])/2 - self.height + self.top)
 
-    def load_video(self, path, filename):
+    def verify_load_location(self, path, filename):
         filename = os.path.join(path, filename)
         if os.path.isdir(filename):
             return
         if not os.path.isfile(filename):
             return
+        self.load_video(filename)
+        self._popup.dismiss()
 
+    def load_video(self, filename):
         self.source = ""
         self.roi_list.clear()
-        self.roi_list.disabled = True
-        self.parent.ids.slider_id.disabled = True
+        self.parent.video_loaded = False
         self.parent.ids.slider_id.value = 0
         self.volume = 0
         self.state = "play"
         self.source = filename
-        self.dismiss_popup()
-
-    def load_video_init(self):
-        self.show_load(self.load_video)
 
     def seek_video(self, pos):
         if self.texture is not None:
             self.seek(pos)
 
-    def dismiss_popup(self):
-        self._popup.dismiss()
-
     def show_load(self, load_action):
-        content = LoadDialog(load=load_action, cancel=self.dismiss_popup)
-        self._popup = Popup(title="Load file", content=content,
-                            size_hint=(0.9, 0.9), auto_dismiss=False)
+        self._popup = LoadDialog(load=load_action)
         self._popup.open()
 
     def show_save(self, save_action):
-        content = SaveDialog(save=save_action, cancel=self.dismiss_popup)
-        self._popup = Popup(title="Save file", content=content,
-                            size_hint=(0.9, 0.9), auto_dismiss=False)
+        self._popup = SaveDialog(save=save_action)
         self._popup.open()
 
     def verify_save_location(self, path, filename):
-        cnf_popup = None
+        self._confirm = None
 
         def finalize_save():
-            if cnf_popup is not None:
-                cnf_popup.dismiss()
-            self.dismiss_popup()
+            if self._confirm is not None:
+                self._confirm.dismiss()
+            self._popup.dismiss()
             self.save_fd_rois(filename)
 
         filename = os.path.join(path, filename)
         if os.path.isdir(filename):
             return
         if os.path.isfile(filename):
-            content = ConfirmPopup(text="File exists. Do you want to overwrite?",
-                                   yes=finalize_save, no=lambda: cnf_popup.dismiss())
-            cnf_popup = Popup(title="Warning", content=content,
-                              size_hint=(None, None), size=(300, 200), auto_dismiss=False)
-            cnf_popup.open()
+            text = "File exists. Do you want to overwrite?"
+            self._confirm = ConfirmDialog(text=text, yes=finalize_save)
+            self._confirm.open()
             return
 
         finalize_save()
@@ -269,15 +239,13 @@ class VideoWidget(Video):
     def save_fd_rois(self, filename):
         width, height = self.texture.size
         masks = [np.frombuffer(fbo.pixels, dtype="ubyte").reshape(height, width, 4)[:, :, 0] > 0
-                 for fbo in self.fbo_list] 
+                 for fbo in self.fbo_list]
         roi_names = [roi for roi in self.roi_list.values] + ["Overall"]
 
-        video_progress = VideoProgress()
-        self._progress = Popup(title="Processing video…", content=video_progress, size_hint=(0.9, 0.9))
-        self._progress.bind(on_dismiss=video_progress.on_parent_dismiss)
+        self._progress = VideoProgress()
         self._progress.open()
 
-        threading.Thread(target=self.calc_save_fd, args=(self.source, masks, roi_names, filename, video_progress.update_progress)).start()
+        threading.Thread(target=self.calc_save_fd, args=(self.source, masks, roi_names, filename, self._progress.update_progress)).start()
 
     def calc_save_fd(self, source, masks, roi_names, filename, callback):
         diffs = pd.DataFrame(calculate_frame_diffs_wcall(source, masks,
@@ -288,7 +256,6 @@ class VideoWidget(Video):
 
     @mainthread
     def close_progressbar(self):
-        self._progress.content.job_finished = True
         self._progress.dismiss()
 
 
@@ -296,8 +263,6 @@ class ROISelector(BoxLayout):
 
     def __init__(self, **kwargs):
         super(ROISelector, self).__init__(**kwargs)
-
-        self.disabled = True
 
         self.dropdown = DropDown()
         self.dropdown.bind(on_select=lambda obj, x:
@@ -309,10 +274,6 @@ class ROISelector(BoxLayout):
                 self.dropdown.select(obj.values[index]))
         self.roi_list.bind(on_roi_removed=self.remove_roi_button)
 
-        def set_disabled(i, b):
-            self.disabled = b
-        self.roi_list.bind(disabled=set_disabled)
-        
         add_roi_btn = Button(text="Add new ROI…", size_hint_y=None, height=44)
         add_roi_btn.bind(on_release=lambda obj: self.roi_list.add() or
                 self.roi_list.select(len(self.roi_list.values)-1))
@@ -335,6 +296,10 @@ class ROISelector(BoxLayout):
         self.ids.mainbutton_id.text = "Select ROI…"
 
 
+class RootWindow(BoxLayout):
+    video_loaded = BooleanProperty(False)
+
+
 class PixelTrackingApp(App):
 
     def __init__(self, **kwargs):
@@ -345,10 +310,6 @@ class PixelTrackingApp(App):
         video = self.root.ids.video_id
         video.stop.set()
         os._exit(0)
-
-    def export_rois(self):
-        video = self.root.ids.video_id
-        video.show_save(video.verify_save_location)
 
 
 if __name__ == '__main__':
