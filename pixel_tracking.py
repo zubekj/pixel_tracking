@@ -238,7 +238,7 @@ class VideoWidget(Video):
 
     def save_fd_rois(self, filename):
         width, height = self.texture.size
-        masks = [np.frombuffer(fbo.pixels, dtype="ubyte").reshape(height, width, 4)[:, :, 0] > 0
+        masks = [np.frombuffer(fbo[0].pixels, dtype="ubyte").reshape(height, width, 4)[:, :, 0] > 0
                  for fbo in self.fbo_list]
         roi_names = [roi for roi in self.roi_list.values] + ["Overall"]
 
