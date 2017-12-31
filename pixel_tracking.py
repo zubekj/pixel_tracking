@@ -14,7 +14,7 @@ from kivy.clock import mainthread, Clock
 from kivy.config import Config
 Config.set('input', 'mouse', 'mouse,disable_multitouch')
 
-from kivy.garden.filebrowser import FileBrowser
+from filebrowser import FileBrowser
 
 import threading
 import numpy as np
