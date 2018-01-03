@@ -128,6 +128,8 @@ class VideoWidget(Video):
             color = Color(*roi_colors[len(self.fbo_list) % len(roi_colors)])
             rect = Rectangle(size=self.vid_size, pos=self.vid_pos,
                              texture=fbo.texture)
+            self.bind(vid_size=lambda s, *args: setattr(rect, 'size', self.vid_size),
+                      vid_pos=lambda s, *args: setattr(rect, 'pos', self.vid_pos))
             self.fbo_list.append((fbo, color, rect))
 
     def select_roi_fbo(self, obj, index):
