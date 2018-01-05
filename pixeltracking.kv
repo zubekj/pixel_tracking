@@ -1,35 +1,40 @@
+#:include cutpointline.kv
+
 RootWindow:
-    video_loaded: False
     orientation: "vertical"
-    VideoWidget:
-        size_hint_y: 1
-        size_hint_x: 1
-        id: video_id
     BoxLayout:
-        pos_hint_y: 0
-        orientation: "horizontal"
+        padding: 10, 10, 10, 10
+        spacing: 20
         size_hint_y: None
-        height: 50
+        height: 60
+        orientation: "horizontal"
         Button:
-            text: "Load video"
             size_hint_x: None
+            width: 200
+            text: "Load video"
             on_release: video_id.show_load(video_id.verify_load_location)
-        Slider:
-            id: slider_id
-            min: 0
-            max: 1
-            value: 0
-            disabled: not root.video_loaded
-            on_value: video_id.seek_video(args[1])
+        ROISelector:
+            id: roi_selector_id
+            disabled: not video_id.video_loaded
         Button:
             text: "Export frame differences"
             size_hint_x: None
             width: 200
-            disabled: not root.video_loaded
+            disabled: not video_id.video_loaded
             on_release: video_id.show_save(video_id.verify_save_location)
-    ROISelector:
-        id: roi_selector_id
-        disabled: not root.video_loaded
+    VideoWidget:
+        id: video_id
+        video_loaded: False
+        size_hint_y: 1
+        size_hint_x: 1
+        cutpoint_panel: cutpoint_id
+    CutpointPanel:
+        padding: 0, 5, 0, 0
+        id: cutpoint_id
+        height: 100
+        size_hint_y: None
+        disabled: not video_id.video_loaded
+        on_value: video_id.seek_video(args[1])
 
 <-VideoWidget>:
     vid_size: (0, 0)
@@ -43,12 +48,7 @@ RootWindow:
             pos: self.vid_pos
 
 <ROISelector>:
-    pos_hint_y: 0
     orientation: "horizontal"
-    size_hint_y: None
-    height: 50
-    Label:
-        text: "Region of interest:"
     Button:
         id: mainbutton_id
         text: "Select ROI\u2026"

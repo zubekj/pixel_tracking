@@ -22,6 +22,8 @@ import pandas as pd
 
 import os
 
+import cutpoint_line
+
 from frame_differences import calculate_frame_diffs_wcall
 
 roi_colors = [[ 0.10588235,  0.61960784,  0.46666667, 1],
@@ -76,10 +78,9 @@ class ROIList(EventDispatcher):
         self.selected = None
 
     def add(self):
-        roi_name = "ROI {0}".format(len(self.values))
-        self.values.append(roi_name)
-        new_index = len(self.values)-1
-        self.dispatch('on_roi_added', new_index)
+        new_value = self.values[-1] + 1 if len(self.values) > 0 else 0
+        self.values.append(new_value)
+        self.dispatch('on_roi_added', new_value)
 
     def select(self, index):
         if index is None:
@@ -110,6 +111,9 @@ class ROIList(EventDispatcher):
 
 class VideoWidget(Video):
 
+    cutpoint_panel = ObjectProperty(None)
+    video_loaded = BooleanProperty(False)
+
     stop = threading.Event()
 
     def __init__(self, **kwargs):
@@ -122,10 +126,10 @@ class VideoWidget(Video):
 
         self.fbo_list = []
 
-    def add_roi_fbo(self, obj, index):
+    def add_roi_fbo(self, obj, new_value):
         with self.canvas:
             fbo = Fbo(size=self.texture.size)
-            color = Color(*roi_colors[len(self.fbo_list) % len(roi_colors)])
+            color = Color(*roi_colors[new_value % len(roi_colors)])
             rect = Rectangle(size=self.vid_size, pos=self.vid_pos,
                              texture=fbo.texture)
             self.bind(vid_size=lambda s, *args: setattr(rect, 'size', self.vid_size),
@@ -173,7 +177,7 @@ class VideoWidget(Video):
         if self.state == "play":
             self.state = "stop"
             self.resize_video()
-            self.parent.video_loaded = True
+            self.video_loaded = True
 
     def on_size(self, obj, size):
         self.resize_video()
@@ -200,8 +204,8 @@ class VideoWidget(Video):
     def load_video(self, filename):
         self.source = ""
         self.roi_list.clear()
-        self.parent.video_loaded = False
-        self.parent.ids.slider_id.value = 0
+        self.video_loaded = False
+        self.cutpoint_panel.reset()
         self.volume = 0
         self.state = "play"
         self.source = filename
@@ -268,7 +272,7 @@ class ROISelector(BoxLayout):
 
         self.dropdown = DropDown()
         self.dropdown.bind(on_select=lambda obj, x:
-                setattr(self.ids.mainbutton_id, 'text', x))
+                setattr(self.ids.mainbutton_id, 'text', "ROI {0}".format(x)))
 
         self.roi_list = App.get_running_app().roi_list
         self.roi_list.bind(on_roi_added=self.add_roi_button)
@@ -283,10 +287,10 @@ class ROISelector(BoxLayout):
 
         self.roi_buttons = []
 
-    def add_roi_button(self, obj, new_index):
-        color = roi_colors[len(self.roi_buttons) % len(roi_colors)]
-        btn = Button(text=obj.values[new_index], size_hint_y=None, height=44,
-                     background_color=color)
+    def add_roi_button(self, obj, new_value):
+        color = roi_colors[new_value % len(roi_colors)]
+        btn = Button(text="ROI {0}".format(new_value), size_hint_y=None,
+                     height=44, background_color=color)
         btn.bind(on_release=lambda instance: self.roi_list.select(
             self.roi_buttons.index(btn)))
         self.dropdown.add_widget(btn)
@@ -299,7 +303,7 @@ class ROISelector(BoxLayout):
 
 
 class RootWindow(BoxLayout):
-    video_loaded = BooleanProperty(False)
+    pass
 
 
 class PixelTrackingApp(App):
