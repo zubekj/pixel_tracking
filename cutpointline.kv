@@ -1,0 +1,54 @@
+<CutpointPanel>:
+    cutpoint_line: cutpoint_line
+    value: cutpoint_line.value
+    cutpoints: cutpoint_line.cutpoints
+    selected_ranges: cutpoint_line.selected_ranges
+    orientation: "vertical"
+    BoxLayout:
+        size_hint_y: None
+        height: 50
+        orientation: "horizontal"
+        ToggleButton:
+            text: "Seek video"
+            group: "cutedit"
+            on_press: setattr(cutpoint_line, "state", "seek") or setattr(self, "state", "down")
+            state: "down"
+        ToggleButton:
+            text: "Cut video"
+            group: "cutedit"
+            on_press: setattr(cutpoint_line, "state", "add") or setattr(self, "state", "down")
+        ToggleButton:
+            text: "Delete cutpoint"
+            group: "cutedit"
+            on_press: setattr(cutpoint_line, "state", "delete") or setattr(self, "state", "down")
+        ToggleButton:
+            text: "Move cutpoint"
+            group: "cutedit"
+            on_press: setattr(cutpoint_line, "state", "move") or setattr(self, "state", "down")
+        ToggleButton:
+            text: "Toggle range"
+            group: "cutedit"
+            on_press: setattr(cutpoint_line, "state", "toggle") or setattr(self, "state", "down")
+
+    CutpointLine:
+        id: cutpoint_line
+
+<CutpointLine>:
+    canvas.before:
+        Color:
+            rgb: 0, 0, 0
+        Rectangle:
+            size: self.size
+            pos: self.pos
+        Color:
+            rgb: [.8, .8, .8] if not self.disabled else [0.25, 0.25, 0.25]
+        Line:
+            width: self.line_width
+            points: self.x + self.padding, self.center_y, self.x + self.width - self.padding, self.center_y
+    canvas.after:
+        Color:
+            rgb: 0.9, 0.2, 0.2 
+        Triangle:
+            points: self.frac_to_pos(self.value)-8, self.center_y+18, self.frac_to_pos(self.value)+8, self.center_y+18, self.frac_to_pos(self.value), self.center_y+8
+        Triangle:
+            points: self.frac_to_pos(self.value)-8, self.center_y-18, self.frac_to_pos(self.value)+8, self.center_y-18, self.frac_to_pos(self.value), self.center_y-8
