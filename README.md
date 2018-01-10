@@ -8,12 +8,11 @@ Pixel Tracking app for quantifying movement on video recordings. Written in Pyth
 - pandas
 - scipy
 - kivy
-- skvideo
 - ffpyplayer 
 
 All required libraries may be installed with pip.
 
-    > pip install numpy pandas scipy kivy sk-video ffpyplayer
+    > pip install numpy pandas scipy kivy ffpyplayer
 
 Kivy dependencies (sdl2, glew, gstreamer) must be installed separately. For Linux and macOS
 it is best to use system-wide package manager. For Windows binary packages are provided:

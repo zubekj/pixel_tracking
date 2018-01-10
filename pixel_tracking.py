@@ -246,18 +246,21 @@ class VideoWidget(Video):
         width, height = self.texture.size
         masks = [np.frombuffer(fbo[0].pixels, dtype="ubyte").reshape(height, width, 4)[:, :, 0] > 0
                  for fbo in self.fbo_list]
-        roi_names = [roi for roi in self.roi_list.values] + ["Overall"]
 
         self._progress = VideoProgress()
         self._progress.open()
 
-        threading.Thread(target=self.calc_save_fd, args=(self.source, masks, roi_names, filename, self._progress.update_progress)).start()
+        threading.Thread(target=self.calc_save_fd,
+                         args=(self.source, masks,
+                               (self.cutpoint_panel.cutpoints,
+                                self.cutpoint_panel.selected_ranges),
+                               filename,
+                               self._progress.update_progress)).start()
 
-    def calc_save_fd(self, source, masks, roi_names, filename, callback):
-        diffs = pd.DataFrame(calculate_frame_diffs_wcall(source, masks,
-            callback=callback))
+    def calc_save_fd(self, source, masks, cutpoints, filename, callback):
+        diffs = calculate_frame_diffs_wcall(source, masks, cutpoints,
+                                            callback=callback)
         self.close_progressbar()
-        diffs.columns = roi_names
         diffs.to_csv(filename, index=False)
 
     @mainthread
