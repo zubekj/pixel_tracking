@@ -22,12 +22,47 @@ RootWindow:
             width: 200
             disabled: not video_id.video_loaded
             on_release: video_id.show_save(video_id.verify_save_location)
-    VideoWidget:
-        id: video_id
-        video_loaded: False
+    BoxLayout:
         size_hint_y: 1
         size_hint_x: 1
-        cutpoint_panel: cutpoint_id
+        orientation: "horizontal"
+        VideoWidget:
+            id: video_id
+            video_loaded: False
+            size_hint_y: 1
+            size_hint_x: 1
+            cutpoint_panel: cutpoint_id
+        BoxLayout:
+            size_hint_x: None
+            width: 70
+            orientation: "vertical"
+            disabled: not video_id.video_loaded
+            padding: 10
+            Label:
+                size_hint_y: None
+                height: 50
+                text: "ROI tool:"
+            Label:
+                size_hint_y: None
+                height: 20
+                text: "{0}".format(video_id.roi_marker_size)
+            Button:
+                size_hint_y: None
+                height: 30
+                text: "+"
+                on_press: setattr(video_id, "roi_marker_size", min(video_id.roi_marker_size + 5, 100))
+            Button:
+                size_hint_y: None
+                height: 30
+                text: "-"
+                on_press: setattr(video_id, "roi_marker_size", max(5, video_id.roi_marker_size - 5))
+            Button:
+                size_hint_y: None
+                height: 30
+                text: "undo"
+                on_press: video_id.undo_roi_mark()
+            Widget:
+                width: 70
     CutpointPanel:
         padding: 0, 5, 0, 0
         id: cutpoint_id

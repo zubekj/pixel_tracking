@@ -7,7 +7,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.dropdown import DropDown
 from kivy.graphics import Color, Ellipse, Line, Rectangle, Fbo
 from kivy.graphics.texture import Texture
-from kivy.properties import ObjectProperty, BooleanProperty, StringProperty
+from kivy.properties import ObjectProperty, BooleanProperty, StringProperty, NumericProperty
 from kivy.event import EventDispatcher
 from kivy.clock import mainthread, Clock
 
@@ -113,6 +113,7 @@ class VideoWidget(Video):
 
     cutpoint_panel = ObjectProperty(None)
     video_loaded = BooleanProperty(False)
+    roi_marker_size = NumericProperty(40.0)
 
     stop = threading.Event()
 
@@ -123,8 +124,8 @@ class VideoWidget(Video):
         self.roi_list.bind(on_roi_added=self.add_roi_fbo)
         self.roi_list.bind(on_roi_selected=self.select_roi_fbo)
         self.roi_list.bind(on_roi_removed=self.remove_roi_fbo)
-
         self.fbo_list = []
+        self.roi_mark_history = []
 
     def add_roi_fbo(self, obj, new_value):
         with self.canvas:
@@ -140,12 +141,14 @@ class VideoWidget(Video):
         for fbo_t in self.fbo_list:
             fbo_t[1].a = 0.5
         self.fbo_list[index][1].a = 0.75
+        self.roi_mark_history = []
 
     def remove_roi_fbo(self, obj, index):
         self.canvas.remove(self.fbo_list[index][0])
         self.canvas.remove(self.fbo_list[index][1])
         self.canvas.remove(self.fbo_list[index][2])
         del self.fbo_list[index]
+        self.roi_mark_history = []
 
     def on_touch_down(self, touch):
         if not self.collide_point(*touch.pos)\
@@ -153,16 +156,24 @@ class VideoWidget(Video):
             return
 
         color = (1, 1, 1)
+
         fbo = self.fbo_list[self.roi_list.selected][0]
         x = (touch.x - self.vid_pos[0])/self.vid_size[0]*fbo.size[0]
         y = (touch.y - self.vid_pos[1])/self.vid_size[1]*fbo.size[1]
 
-        d = 40.0/self.vid_size[0]*fbo.size[0]
+        # Ensure position within video frame
+        if x < 0 or y < 0 or x > fbo.size[0] or y > fbo.size[1]:
+            return
+
+        #d = 40.0/self.vid_size[0]*fbo.size[0]
+        d = self.roi_marker_size
 
         with fbo:
-            Color(*color, mode='rgb')
-            Ellipse(pos=(x - d / 2, y - d / 2), size=(d, d))
-            touch.ud['line'] = Line(points=(x, y), width=d/2, joint='round')
+            c = Color(*color, mode='rgb')
+            e = Ellipse(pos=(x - d / 2, y - d / 2), size=(d, d))
+            l = Line(points=(x, y), width=d/2, joint='round')
+            touch.ud['line'] = l
+            self.roi_mark_history.append((c, e, l))
 
     def on_touch_move(self, touch):
         if self.roi_list.selected is None or "line" not in touch.ud:
@@ -173,11 +184,24 @@ class VideoWidget(Video):
         y = (touch.y - self.vid_pos[1])/self.vid_size[1]*fbo.size[1]
         touch.ud['line'].points += [x, y]
 
+    def undo_roi_mark(self):
+        if len(self.roi_mark_history) == 0:
+            return
+        fbo = self.fbo_list[self.roi_list.selected][0]
+        fbo.remove(self.roi_mark_history[-1][0])
+        fbo.remove(self.roi_mark_history[-1][1])
+        fbo.remove(self.roi_mark_history[-1][2])
+        del self.roi_mark_history[-1]
+        fbo.bind()
+        fbo.clear_buffer()
+        fbo.release()
+
     def on_texture(self, obj, texture):
         if self.state == "play":
             self.state = "stop"
             self.resize_video()
             self.video_loaded = True
+            self.cutpoint_panel.length = self.duration
 
     def on_size(self, obj, size):
         self.resize_video()

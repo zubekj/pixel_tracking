@@ -187,6 +187,7 @@ class CutpointLine(Widget):
 class CutpointPanel(BoxLayout):
     cutpoint_line = ObjectProperty(None)
     value = NumericProperty(0)
+    length = NumericProperty(0)
     cutpoints = ListProperty([0, 1])
     selected_ranges = ListProperty([True])
 

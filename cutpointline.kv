@@ -1,12 +1,13 @@
 <CutpointPanel>:
     cutpoint_line: cutpoint_line
     value: cutpoint_line.value
+    length: 1.0
     cutpoints: cutpoint_line.cutpoints
     selected_ranges: cutpoint_line.selected_ranges
     orientation: "vertical"
     BoxLayout:
         size_hint_y: None
-        height: 50
+        height: 40
         orientation: "horizontal"
         ToggleButton:
             text: "Seek video"
@@ -29,9 +30,20 @@
             text: "Toggle range"
             group: "cutedit"
             on_press: setattr(cutpoint_line, "state", "toggle") or setattr(self, "state", "down")
-
-    CutpointLine:
-        id: cutpoint_line
+    BoxLayout:
+        size_hint_y: None
+        height: 50
+        orientation: "horizontal"
+        Label:
+            size_hint_x: None
+            text_size: self.size
+            width: 120
+            halign: "right"
+            valign: "middle"
+            text: "{0:.2f}/{1:.2f}".format(root.value * root.length, root.length)
+        CutpointLine:
+            id: cutpoint_line
+            padding: 15
 
 <CutpointLine>:
     canvas.before:
