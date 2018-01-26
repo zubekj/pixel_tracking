@@ -58,7 +58,7 @@ def calculate_frame_diffs_wcall(video_file, masks, cut_ranges,
     vid_size = (vid_size[1], vid_size[0])
 
     img, t = frame
-    oframe = np.asarray(img.to_memoryview(keep_align=True)[0], dtype=np.uint8)
+    oframe = np.asarray(img.to_memoryview(keep_align=False)[0], dtype=np.uint8)
 
     range_end = [r*duration for r in cut_ranges[0]]
     range_selected = [True] + cut_ranges[1]
@@ -88,7 +88,7 @@ def calculate_frame_diffs_wcall(video_file, masks, cut_ranges,
                 crange = nrange
 
         # Calculate frame difference
-        cframe = np.asarray(img.to_memoryview(keep_align=True)[0])
+        cframe = np.asarray(img.to_memoryview(keep_align=False)[0])
         if oframe is not None:
             frame_diff = ((cframe - oframe > pixel_diff_threshold) &
                           (oframe - cframe > pixel_diff_threshold))
