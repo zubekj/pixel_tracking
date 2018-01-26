@@ -141,14 +141,20 @@ class VideoWidget(Video):
         for fbo_t in self.fbo_list:
             fbo_t[1].a = 0.5
         self.fbo_list[index][1].a = 0.75
-        self.roi_mark_history = []
 
     def remove_roi_fbo(self, obj, index):
         self.canvas.remove(self.fbo_list[index][0])
         self.canvas.remove(self.fbo_list[index][1])
         self.canvas.remove(self.fbo_list[index][2])
+        # Remove all history related to deleted ROI
+        fbo = self.fbo_list[index][0]
+        i = 0
+        while i != len(self.roi_mark_history):
+            if self.roi_mark_history[i][0] == fbo:
+                del self.roi_mark_history[i]
+            else:
+                i += 1
         del self.fbo_list[index]
-        self.roi_mark_history = []
 
     def on_touch_down(self, touch):
         if not self.collide_point(*touch.pos)\
@@ -173,7 +179,7 @@ class VideoWidget(Video):
             e = Ellipse(pos=(x - d / 2, y - d / 2), size=(d, d))
             l = Line(points=(x, y), width=d/2, joint='round')
             touch.ud['line'] = l
-            self.roi_mark_history.append((c, e, l))
+            self.roi_mark_history.append((fbo, c, e, l))
 
     def on_touch_move(self, touch):
         if self.roi_list.selected is None or "line" not in touch.ud:
@@ -187,10 +193,10 @@ class VideoWidget(Video):
     def undo_roi_mark(self):
         if len(self.roi_mark_history) == 0:
             return
-        fbo = self.fbo_list[self.roi_list.selected][0]
-        fbo.remove(self.roi_mark_history[-1][0])
-        fbo.remove(self.roi_mark_history[-1][1])
-        fbo.remove(self.roi_mark_history[-1][2])
+        fbo, c, e, l = self.roi_mark_history[-1]
+        fbo.remove(c)
+        fbo.remove(e)
+        fbo.remove(l)
         del self.roi_mark_history[-1]
         fbo.bind()
         fbo.clear_buffer()
