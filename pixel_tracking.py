@@ -171,7 +171,6 @@ class VideoWidget(Video):
         if x < 0 or y < 0 or x > fbo.size[0] or y > fbo.size[1]:
             return
 
-        #d = 40.0/self.vid_size[0]*fbo.size[0]
         d = self.roi_marker_size
 
         with fbo:

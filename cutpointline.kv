@@ -1,3 +1,5 @@
+#:import format_time utils.format_time
+
 <CutpointPanel>:
     cutpoint_line: cutpoint_line
     value: cutpoint_line.value
@@ -36,11 +38,11 @@
         orientation: "horizontal"
         Label:
             size_hint_x: None
+            width: 175
             text_size: self.size
-            width: 120
             halign: "right"
             valign: "middle"
-            text: "{0:.2f}/{1:.2f}".format(root.value * root.length, root.length)
+            text: "{0} / {1}".format(format_time(root.value * root.length), format_time(root.length))
         CutpointLine:
             id: cutpoint_line
             padding: 15
